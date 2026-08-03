@@ -44,7 +44,12 @@ function cleanTitle(value) {
   return value.replace(/\s+/g, " ").replace(/[\/\\:#?%*|<>"\x00-\x1f]/g, " ").trim().replace(/\s+/g, " ").slice(0, 180);
 }
 function targetName(url, title) {
-  return `${hostname(url)} \u2014 ${cleanTitle(title)}`;
+  const cleaned = cleanTitle(title);
+  return cleaned ? `${hostname(url)} \u2014 ${cleaned}` : "";
+}
+function targetPath(sourcePath, desiredName) {
+  const parent = sourcePath.slice(0, sourcePath.lastIndexOf("/"));
+  return parent ? `${parent}/${desiredName}.md` : `${desiredName}.md`;
 }
 
 // src/main.ts
@@ -70,33 +75,42 @@ var LinkTitlePlugin = class extends import_obsidian.Plugin {
   }
   async scan() {
     const files = this.app.vault.getMarkdownFiles();
-    let renamed = 0;
+    const counts = { renamed: 0, skipped: 0, failed: 0 };
     for (const file of files) {
-      if (await this.rename(file)) renamed++;
+      const result = await this.rename(file);
+      if (result === "renamed") counts.renamed++;
+      else if (result === "failed") counts.failed++;
+      else if (result === "skipped") counts.skipped++;
     }
-    new import_obsidian.Notice(`Renamed ${renamed} note${renamed === 1 ? "" : "s"}.`);
+    new import_obsidian.Notice(`Link Title scan: ${counts.renamed} renamed, ${counts.skipped} skipped, ${counts.failed} failed.`);
   }
   async rename(file) {
     const body = await this.app.vault.read(file);
     const url = extractUrl(body);
-    if (!url) return false;
+    if (!url) return "skipped";
     let title;
     try {
       title = await fetchTitle(url, this.settings.timeoutMs);
     } catch (error) {
-      console.warn("Obsidian Link Title:", error);
-      return false;
+      console.warn(`Obsidian Link Title: could not fetch title for ${file.path} (${url})`, error);
+      new import_obsidian.Notice(`Skipped ${file.path}: could not fetch page title.`);
+      return "failed";
     }
     const desired = targetName(url, title);
-    if (!desired || desired === file.basename) return false;
-    const existing = this.app.vault.getAbstractFileByPath(`${desired}.md`);
-    if (existing && existing !== file) return false;
+    if (!desired || desired === file.basename) return "skipped";
+    const destination = targetPath(file.path, desired);
+    const existing = this.app.vault.getAbstractFileByPath(destination);
+    if (existing && existing !== file) {
+      new import_obsidian.Notice(`Skipped ${file.path}: destination already exists.`);
+      return "skipped";
+    }
     try {
-      await this.app.fileManager.renameFile(file, `${desired}.md`);
-      return true;
+      await this.app.fileManager.renameFile(file, destination);
+      return "renamed";
     } catch (error) {
-      console.warn("Obsidian Link Title rename failed:", error);
-      return false;
+      console.warn(`Obsidian Link Title: rename failed for ${file.path} -> ${destination}`, error);
+      new import_obsidian.Notice(`Failed to rename ${file.path}: ${error instanceof Error ? error.message : "unknown error"}.`);
+      return "failed";
     }
   }
 };

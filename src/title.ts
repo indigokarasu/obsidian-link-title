@@ -5,4 +5,13 @@ export function extractUrl(body: string): string | null {
 }
 export function hostname(url: string): string { const host = new URL(url).hostname.toLowerCase(); return host.startsWith("www.") ? host.slice(4) : host; }
 export function cleanTitle(value: string): string { return value.replace(/\s+/g, " ").replace(/[\/\\:#?%*|<>"\x00-\x1f]/g, " ").trim().replace(/\s+/g, " ").slice(0, 180); }
-export function targetName(url: string, title: string): string { return `${hostname(url)} — ${cleanTitle(title)}`; }
+export function targetName(url: string, title: string): string {
+  const cleaned = cleanTitle(title);
+  return cleaned ? `${hostname(url)} — ${cleaned}` : "";
+}
+
+/** Return the vault-relative path for a renamed note, keeping its parent folder. */
+export function targetPath(sourcePath: string, desiredName: string): string {
+  const parent = sourcePath.slice(0, sourcePath.lastIndexOf("/"));
+  return parent ? `${parent}/${desiredName}.md` : `${desiredName}.md`;
+}
