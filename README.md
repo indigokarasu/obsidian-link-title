@@ -1,5 +1,7 @@
 # Obsidian Link Title
 
+![Obsidian Link Title](assets/readme/hero.svg)
+
 Renames Markdown notes whose entire body is exactly one HTTP(S) URL (surrounding whitespace allowed) to `domain — Page Title`.
 
 Renaming is conservative and explicit: use the command palette command **Rename URL-only notes** or the settings button. It never runs at startup, so it cannot create automatic rename loops. Notes with any additional content are ignored. Renames preserve the source folder. Existing files, malformed URLs, redirects, timeouts, non-HTML responses, missing titles, and network failures are skipped safely, with actionable per-note notices and a scan summary.
