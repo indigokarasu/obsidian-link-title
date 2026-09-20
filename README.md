@@ -1,6 +1,6 @@
 # Obsidian Link Title
 
-![Obsidian Link Title](assets/readme/hero.svg)
+![Obsidian Link Title](assets/readme/hero.jpg)
 
 Renames Markdown notes whose entire body is exactly one HTTP(S) URL (surrounding whitespace allowed) to `domain — Page Title`.
 
